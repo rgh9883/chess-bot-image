@@ -10,10 +10,15 @@ def on_click(event, x, y, flags, param):
 
 
 if __name__ == "__main__":
+    cap = cv2.VideoCapture(4)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+
     cv2.namedWindow("board", cv2.WINDOW_NORMAL)
     cv2.setMouseCallback("board", on_click)
 
-    img = cv2.imread('board.png')
+    ok, img = cap.read()
     if img is None:
         print("Can't find Image")
         exit()
@@ -29,7 +34,7 @@ if __name__ == "__main__":
 
     cv2.destroyWindow("board")
     if len(points) != 4:
-
+        exit()
     src = np.float32(points)
     dst = np.float32([[0, 0], [800, 0], [800, 800], [0, 800]])
     M = cv2.getPerspectiveTransform(src, dst)
