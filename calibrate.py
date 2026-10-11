@@ -45,4 +45,4 @@ if __name__ == "__main__":
         y = i * 100
         cv2.line(warped, (x, 0), (x, 800), (0, 0, 255), 2)
         cv2.line(warped, (0, y), (800, y), (0, 0, 255), 2)
-    cv2.imwrite("warped.png", warped)
+    cv2.imwrite("images/warped.png", warped)
