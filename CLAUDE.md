@@ -26,7 +26,7 @@ Python prototype of the vision system for a physical chess bot. A camera watches
 
 - OS: EndeavourOS (Arch). Python 3.14 system.
 - Project managed with **uv 0.12**. uv 0.12 defaults to a `src/` package layout, so the project was created with `uv init --no-package chessbot` (flat `main.py`). Run code with `uv run <file>.py`.
-- Dependencies so far: `opencv-python`, `numpy`, `chess` (the PyPI name is `chess`, not `python-chess`). Still to add: `ultralytics`. Stockfish not installed yet (`sudo pacman -S stockfish`).
+- Dependencies so far: `opencv-python`, `numpy`, `chess` (the PyPI name is `chess`, not `python-chess`). `ultralytics` 8.4 (added). This laptop is CPU-only (i7-8550U). Stockfish not installed yet (`sudo pacman -S stockfish`).
 - OpenCV 5.x: use `cv2.VideoWriter.fourcc(...)`, not `cv2.VideoWriter_fourcc` (the old name runs but the type stubs/LSP don't know it).
 - My LSP flags `cv2.imread` results as possibly `None`; check `if img is None` after loading.
 - Training should run on my desktop (NVIDIA GPU, Bazzite) or the laptop (ASUS ROG Zephyrus M16).
@@ -54,9 +54,11 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 
 - `main.py`: live camera feed (lesson 1). Space saves numbered photos to `data/img_N.png`, q quits. Open review notes: check `ok` from `cap.read()` and break if False; q calls `exit()` so `cap.release()` is never reached (use `break`).
 - `calibrate.py`: grabs one live frame from the camera, I click the 4 inner grid corners (top-left, top-right, bottom-right, bottom-left), computes `M = cv2.getPerspectiveTransform(src, dst)`, warps to 800x800, draws a grid, saves `images/warped.png` and `corners.npy`. Earlier review notes are fixed (dots drawn on `display = img.copy()`, quitting before 4 clicks exits cleanly).
-- `corners.npy`: saved calibration corners (dated Oct 11). Calibration was originally done on a wooden board; recalibrate on the pink/green board before square mapping.
+- `corners.npy`: calibration corners for the pink/green board (Oct 11), verified with `images/warped.png`; grid lines match square boundaries.
 - `data/`: raw training photos (currently missing from the project folder; the 42 photos exist only inside `dataset/`).
-- `dataset/`: Roboflow export, 34 train / 8 valid images, no test split. Classes in `data.yaml`: `names: ['dark_piece', 'white_piece']`, so **class 0 = dark (brown), class 1 = white**. `data.yaml` is unedited; its `../train/images` paths work because Ultralytics strips a leading `../` when the path doesn't exist (unverified until first training run).
+- `train.py`: trains `yolo26n.pt` on `dataset/data.yaml`. Real run was on the PC (GPU), 100 epochs, imgsz 1280.
+- `models/best.pt`: trained v1 model, copied from the PC run and committed. `runs/` and `yolo26n.pt` are gitignored.
+- `dataset/`: Roboflow export, 34 train / 8 valid images, no test split. Classes in `data.yaml`: `names: ['dark_piece', 'white_piece']`, so **class 0 = dark (brown), class 1 = white**. `data.yaml` is unedited; its `../train/images` paths work because Ultralytics strips a leading `../` when the path doesn't exist (verified in training).
 
 ## Progress so far
 
@@ -71,7 +73,7 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 ## Next steps
 
 1. Done: checked `data.yaml` and a sample label (format `class x_center y_center width height`, normalized 0 to 1). Only add a `path:` key if training can't find the dataset.
-2. `uv add ultralytics`, then teach training: what epochs, image size, and pretrained weights mean; train a small (nano) model; how to read the results (mAP, precision/recall, validation images).
+2. Done: trained nano model v1 on the PC; box bottom edges looked good on validation images.
 3. Run the trained model on new photos and on the live feed; draw boxes on a `.copy()` to inspect.
 4. Map detections to squares (base point + `perspectiveTransform`), ignore points outside the board.
 5. Match occupancy to legal moves, then add Stockfish via `chess.engine.SimpleEngine.popen_uci`.
