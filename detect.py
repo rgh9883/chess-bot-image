@@ -6,7 +6,7 @@ USE_CAMERA = False
 TEST_IMAGE = "data/img_1.png"
 
 if __name__ == "__main__":
-    model = YOLO("models/best.pt")
+    model = YOLO("models/v2.pt")
 
     if USE_CAMERA:
         cap = cv2.VideoCapture(4)
