@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['dark_piece', 'white_piece']
+
+roboflow:
+  workspace: rahuls-workspace-s5uto
+  project: chess-piece-occupancy-and-color
+  version: 1
+  license: Private
+  url: https://app.roboflow.com/rahuls-workspace-s5uto/chess-piece-occupancy-and-color/1
