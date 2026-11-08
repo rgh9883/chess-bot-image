@@ -10,4 +10,5 @@ if __name__ == "__main__":
         imgsz=1280,
         batch=8,
         device=0,
+        hsv_s=0.2
     )
