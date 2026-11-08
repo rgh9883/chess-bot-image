@@ -52,7 +52,9 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 
 ## Files
 
-- `main.py`: live camera feed (lesson 1). Space saves numbered photos to `data/img_N.png`, q quits. Open review notes: check `ok` from `cap.read()` and break if False; q calls `exit()` so `cap.release()` is never reached (use `break`).
+- `main.py`: cleared (old capture code is in git history); will hold the real game loop.
+- `detect.py`: runs the model on a frame and draws boxes + confidence. `USE_CAMERA` flag switches between live camera and `TEST_IMAGE`.
+- `prelabel.py` (written by Claude at my request, for speed): space saves a photo to `data/b2_img_NNN.png` and the model's boxes to a matching `.txt`, plus `data/data.yaml`, for upload to Roboflow and correcting classes there.
 - `calibrate.py`: grabs one live frame from the camera, I click the 4 inner grid corners (top-left, top-right, bottom-right, bottom-left), computes `M = cv2.getPerspectiveTransform(src, dst)`, warps to 800x800, draws a grid, saves `images/warped.png` and `corners.npy`. Earlier review notes are fixed (dots drawn on `display = img.copy()`, quitting before 4 clicks exits cleanly).
 - `corners.npy`: calibration corners for the pink/green board (Oct 11), verified with `images/warped.png`; grid lines match square boundaries.
 - `data/`: raw training photos (currently missing from the project folder; the 42 photos exist only inside `dataset/`).
