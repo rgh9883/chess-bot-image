@@ -1,22 +1,35 @@
 import cv2
 from ultralytics import YOLO
 
+# True = live camera, False = test on a saved photo
+USE_CAMERA = False
+TEST_IMAGE = "data/img_1.png"
+
 if __name__ == "__main__":
     model = YOLO("models/best.pt")
 
-    cap = cv2.VideoCapture(4)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    if USE_CAMERA:
+        cap = cv2.VideoCapture(4)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    else:
+        test_img = cv2.imread(TEST_IMAGE)
+        if test_img is None:
+            print(f"Can't load {TEST_IMAGE}")
+            exit()
 
     cv2.namedWindow("board", cv2.WINDOW_NORMAL)
     cv2.namedWindow("detections", cv2.WINDOW_NORMAL)
 
     while True:
-        ok, img = cap.read()
-        # if the read failed, stop the loop
-        if not ok:
-            break
+        if USE_CAMERA:
+            ok, img = cap.read()
+            # if the read failed, stop the loop
+            if not ok:
+                break
+        else:
+            img = test_img
 
         cv2.imshow("board", img)
         key = cv2.waitKey(1)
@@ -51,7 +64,7 @@ if __name__ == "__main__":
                     color = (0, 0, 255)
                 else:
                     white += 1
-                    color = (255, 0 , 0) 
+                    color = (255, 0 , 0)
                 cv2.putText(display, f"{cf:.2f}", (int(x1), int(y1) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
                 cv2.rectangle(display, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
@@ -62,5 +75,6 @@ if __name__ == "__main__":
 
             cv2.imshow("detections", display)
 
-    cap.release()
+    if USE_CAMERA:
+        cap.release()
     cv2.destroyAllWindows()
