@@ -26,7 +26,7 @@ Python prototype of the vision system for a physical chess bot. A camera watches
 
 - OS: EndeavourOS (Arch). Python 3.14 system.
 - Project managed with **uv 0.12**. uv 0.12 defaults to a `src/` package layout, so the project was created with `uv init --no-package chessbot` (flat `main.py`). Run code with `uv run <file>.py`.
-- Dependencies so far: `opencv-python`, `numpy`, `chess` (the PyPI name is `chess`, not `python-chess`). `ultralytics` 8.4 (added). This laptop is CPU-only (i7-8550U). Stockfish not installed yet (`sudo pacman -S stockfish`).
+- Dependencies so far: `opencv-python`, `numpy`, `chess` (the PyPI name is `chess`, not `python-chess`). `ultralytics` 8.4, `pygame-ce` 2.5.8 (GUI; `import pygame`; can load SVG). This laptop is CPU-only (i7-8550U). Stockfish 19 installed (`/usr/bin/stockfish`).
 - OpenCV 5.x: use `cv2.VideoWriter.fourcc(...)`, not `cv2.VideoWriter_fourcc` (the old name runs but the type stubs/LSP don't know it).
 - My LSP flags `cv2.imread` results as possibly `None`; check `if img is None` after loading.
 - Training should run on my desktop (NVIDIA GPU, Bazzite) or the laptop (ASUS ROG Zephyrus M16).
@@ -54,7 +54,8 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 
 Run everything from the project root. Tools are run as modules so they can import `vision.py`: `uv run python -m tools.detect` (not `uv run tools/detect.py`).
 
-- `main.py`: empty; will hold the real game loop.
+- `main.py`: pygame GUI, `uv run main.py`. Left: live camera + calibrated outline + turn banner + instructions. Right: eval bar + lichess-style board (python-chess SVG pieces). While a bot move is pending the board shows the position *before* it, with a green arrow (plus rook arrow when castling), blue from/to squares and a red X on a piece to remove. Red squares = confirm mismatch. Fullscreen via `pygame.SCALED | pygame.FULLSCREEN` (fixed 1372x700 layout stretched to the screen; needed on Hyprland), F11 toggles. Buttons: Confirm (also Space), Undo, New game (opens a Stockfish level 0-20 picker: -/+ or arrow keys, Enter/Esc), Eval bar on/off, Quit. Current level shown under the board. Detection + Stockfish run in a background thread (banner shows "Working...").
+- `game.py`: `Game` class, no drawing. States confirm -> your move -> (Stockfish reply) -> confirm, or over. `SKILL_LEVEL` 5, `THINK_TIME` 0.5, `EVAL_TIME` 0.2. `describe()` gives plain-words instructions for the bot move; `captured_square()` handles en passant; `castling_rook()`.
 - `vision.py`: shared settings and code. `MODEL` (`models/v3.pt`), `CORNERS`, stable by-id `CAMERA` path, `IMGSZ`, `CONF`, `BASE_OFFSET`. `open_camera()`, `load_homography()`, `draw_board_outline()`, `detect(model, M, img)` returns `{square: chess.WHITE/BLACK}` plus an annotated copy (step 4: base point, `perspectiveTransform`, off-board skip, highest confidence wins when two boxes share a square). Written by Claude at my request. `uv run vision.py` = live test: space prints a W/D/. text board.
 - `moves.py`: step 5. Scores every legal move (depth 1) by how many squares its colored occupancy disagrees with the camera; accepts the best if errors <= `MAX_ERRORS` (2) and it beats the runner-up by `MARGIN` (2), else "unsure". "No change" is a candidate too. Promotions: queen only. `confirm(board, seen)` lists mismatched squares (for checking the bot/arm move was played). `uv run moves.py` = live test playing both sides (space detect, c confirm, u undo).
 - `tools/calibrate.py`: click the 4 inner grid corners (TL, TR, BR, BL), saves `corners.npy`, then shows the warped grid in a window (no file saved).
@@ -83,7 +84,7 @@ Run everything from the project root. Tools are run as modules so they can impor
 2. Done: trained nano model v1 on the PC; box bottom edges looked good on validation images.
 3. Done: model runs on photos/live feed; v3 classifies colors correctly after batch 2 (pre-labeled with `tools/prelabel.py`).
 4. Done: `vision.detect` maps all 32 pieces of the starting position to the correct squares and colors (Nov 15).
-5. Done: move matching by error scoring (`moves.py`), tested on simulated cases (normal, missed piece, wrong color, ambiguous capture, castling, promotion) and live on the starting position. Game flow will confirm the board after each bot move (needed for the robot arm). Next: Stockfish via `chess.engine.SimpleEngine.popen_uci` (`sudo pacman -S stockfish`), then the game loop in `main.py`.
+5. Done: move matching by error scoring (`moves.py`), tested on simulated cases (normal, missed piece, wrong color, ambiguous capture, castling, promotion) and live on the starting position. Game flow will confirm the board after each bot move (needed for the robot arm). Done: Stockfish + game loop in `main.py`. Done: pygame GUI (`main.py`) with game logic in `game.py`.
 6. Done for batch 2 (v3). Repeat with a new `PREFIX` if accuracy drops in new conditions.
 
 ## Labeling rules (for future batches)

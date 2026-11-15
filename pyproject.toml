@@ -8,5 +8,7 @@ dependencies = [
     "chess>=1.11.2",
     "numpy>=2.5.3",
     "opencv-python>=5.0.0.93",
+    "pygame-ce>=2.5.8",
+    "pyside6-essentials>=6.12.0",
     "ultralytics>=8.4.208",
 ]
