@@ -78,3 +78,37 @@ def detect(model, M, img):
 
 def load():
     return YOLO(MODEL), load_homography()
+
+
+if __name__ == "__main__":
+    # Step 4 test: live feed with the calibrated outline. Space = detect + print the squares, q = quit.
+    model, M = load()
+    cap = open_camera()
+    cv2.namedWindow("camera", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("detections", cv2.WINDOW_NORMAL)
+    print("space = detect, q = quit")
+
+    while True:
+        ok, img = cap.read()
+        if not ok:
+            print("Camera read failed")
+            break
+        preview = img.copy()
+        draw_board_outline(preview)
+        cv2.imshow("camera", preview)
+        key = cv2.waitKey(1)
+
+        if key == ord('q'):
+            break
+        elif key == ord(' '):
+            seen, display = detect(model, M, img)
+            cv2.imshow("detections", display)
+            # Text board from white's view: W = white, D = dark, . = empty
+            for rank in range(7, -1, -1):
+                row = ["W" if seen.get(chess.square(f, rank)) == chess.WHITE
+                       else "D" if chess.square(f, rank) in seen else "." for f in range(8)]
+                print(rank + 1, " ".join(row))
+            print("  a b c d e f g h", f"({len(seen)} pieces)\n")
+
+    cap.release()
+    cv2.destroyAllWindows()

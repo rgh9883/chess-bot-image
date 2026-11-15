@@ -55,12 +55,13 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 Run everything from the project root. Tools are run as modules so they can import `vision.py`: `uv run python -m tools.detect` (not `uv run tools/detect.py`).
 
 - `main.py`: empty; will hold the real game loop.
-- `vision.py`: shared settings and code. `MODEL` (`models/v3.pt`), `CORNERS`, stable by-id `CAMERA` path, `IMGSZ`, `CONF`, `BASE_OFFSET`. `open_camera()`, `load_homography()`, `draw_board_outline()`, `detect(model, M, img)` returns `{square: chess.WHITE/BLACK}` plus an annotated copy (step 4: base point, `perspectiveTransform`, off-board skip, highest confidence wins when two boxes share a square). Written by Claude at my request; not yet tested on the camera.
+- `vision.py`: shared settings and code. `MODEL` (`models/v3.pt`), `CORNERS`, stable by-id `CAMERA` path, `IMGSZ`, `CONF`, `BASE_OFFSET`. `open_camera()`, `load_homography()`, `draw_board_outline()`, `detect(model, M, img)` returns `{square: chess.WHITE/BLACK}` plus an annotated copy (step 4: base point, `perspectiveTransform`, off-board skip, highest confidence wins when two boxes share a square). Written by Claude at my request. `uv run vision.py` = live test: space prints a W/D/. text board.
+- `moves.py`: step 5. Scores every legal move (depth 1) by how many squares its colored occupancy disagrees with the camera; accepts the best if errors <= `MAX_ERRORS` (2) and it beats the runner-up by `MARGIN` (2), else "unsure". "No change" is a candidate too. Promotions: queen only. `confirm(board, seen)` lists mismatched squares (for checking the bot/arm move was played). `uv run moves.py` = live test playing both sides (space detect, c confirm, u undo).
 - `tools/calibrate.py`: click the 4 inner grid corners (TL, TR, BR, BL), saves `corners.npy`, then shows the warped grid in a window (no file saved).
 - `tools/detect.py`: my detection test script. `USE_CAMERA` flag switches between live camera and `TEST_IMAGE`.
 - `tools/prelabel.py`: space saves `data/<PREFIX>NNN.png` + the model's labels `.txt` + `data/data.yaml` for Roboflow upload. Change `PREFIX` for each new batch (last used `b2_img_`).
 - `tools/train.py`: trains `yolo26n.pt` on `dataset/data.yaml` (100 epochs, imgsz 1280, `hsv_s=0.2`, GPU). Run on the PC.
-- `corners.npy`: calibration. **Stale**: the board moved during batch 2; recalibrate before testing step 4.
+- `corners.npy`: calibration, redone Nov 15. Order must be TL, TR, BR, BL (the first click was BL, which rotated every square; fixed by reordering the saved array).
 - `models/`: `v1.pt`, `v2.pt` (`hsv_s=0.2`), `v3.pt` (more data, current; colors correct).
 - `dataset/`: Roboflow export v2 (71 train / 17 valid). `names: ['dark_piece', 'white_piece']`, so **class 0 = dark, class 1 = white**. Its `../train/images` paths work as-is.
 - `data/`: raw photos and prelabels, **gitignored** (already in Roboflow). Local only.
@@ -81,8 +82,8 @@ Run everything from the project root. Tools are run as modules so they can impor
 1. Done: checked `data.yaml` and a sample label (format `class x_center y_center width height`, normalized 0 to 1). Only add a `path:` key if training can't find the dataset.
 2. Done: trained nano model v1 on the PC; box bottom edges looked good on validation images.
 3. Done: model runs on photos/live feed; v3 classifies colors correctly after batch 2 (pre-labeled with `tools/prelabel.py`).
-4. In progress: map detections to squares. Code is in `vision.detect`; recalibrate, then test on a known position.
-5. Match occupancy to legal moves, then add Stockfish via `chess.engine.SimpleEngine.popen_uci`.
+4. Done: `vision.detect` maps all 32 pieces of the starting position to the correct squares and colors (Nov 15).
+5. Done: move matching by error scoring (`moves.py`), tested on simulated cases (normal, missed piece, wrong color, ambiguous capture, castling, promotion) and live on the starting position. Game flow will confirm the board after each bot move (needed for the robot arm). Next: Stockfish via `chess.engine.SimpleEngine.popen_uci` (`sudo pacman -S stockfish`), then the game loop in `main.py`.
 6. Done for batch 2 (v3). Repeat with a new `PREFIX` if accuracy drops in new conditions.
 
 ## Labeling rules (for future batches)
