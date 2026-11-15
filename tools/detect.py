@@ -1,18 +1,17 @@
 import cv2
 from ultralytics import YOLO
 
+from vision import MODEL, open_camera
+
 # True = live camera, False = test on a saved photo
 USE_CAMERA = False
 TEST_IMAGE = "data/img_1.png"
 
 if __name__ == "__main__":
-    model = YOLO("models/v3.pt")
+    model = YOLO(MODEL)
 
     if USE_CAMERA:
-        cap = cv2.VideoCapture(4)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        cap = open_camera()
     else:
         test_img = cv2.imread(TEST_IMAGE)
         if test_img is None:

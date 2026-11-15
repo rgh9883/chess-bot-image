@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from vision import CORNERS, open_camera
+
 
 points = []
 
@@ -10,10 +12,7 @@ def on_click(event, x, y, flags, param):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(4)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap = open_camera()
 
     cv2.namedWindow("board", cv2.WINDOW_NORMAL)
     cv2.setMouseCallback("board", on_click)
@@ -38,11 +37,16 @@ if __name__ == "__main__":
     src = np.float32(points)
     dst = np.float32([[0, 0], [800, 0], [800, 800], [0, 800]])
     M = cv2.getPerspectiveTransform(src, dst)
-    np.save("corners.npy", src)
+    np.save(CORNERS, src)
     warped = cv2.warpPerspective(img, M, (800, 800))
     for i in range(9):
         x = i * 100
         y = i * 100
         cv2.line(warped, (x, 0), (x, 800), (0, 0, 255), 2)
         cv2.line(warped, (0, y), (800, y), (0, 0, 255), 2)
-    cv2.imwrite("images/warped.png", warped)
+    # Show the grid check instead of saving it: lines should sit on the square boundaries
+    cv2.namedWindow("warped", cv2.WINDOW_NORMAL)
+    cv2.imshow("warped", warped)
+    cv2.waitKey(0)
+    cap.release()
+    cv2.destroyAllWindows()

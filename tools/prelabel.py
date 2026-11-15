@@ -2,12 +2,11 @@ import os
 import cv2
 from ultralytics import YOLO
 
+from vision import MODEL, open_camera
+
 # Play a move, press space: saves the photo + the model's boxes as a YOLO label.
 # Upload the data/ folder to Roboflow (photos + matching .txt labels + data.yaml) and fix classes there.
-MODEL = "models/v2.pt"
 PREFIX = "b2_img_"  # change per batch so names never clash with earlier photos
-# Stable camera path (works even if /dev/videoN numbering changes)
-CAMERA = "/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._onn_4K_Webcam_SN0001-video-index0"
 
 if __name__ == "__main__":
     model = YOLO(MODEL)
@@ -20,10 +19,7 @@ if __name__ == "__main__":
     # Continue numbering after any photos already in the folder, so nothing gets overwritten
     count = len([f for f in os.listdir("data") if f.startswith(PREFIX) and f.endswith(".png")]) + 1
 
-    cap = cv2.VideoCapture(CAMERA, cv2.CAP_V4L2)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap = open_camera()
 
     cv2.namedWindow("board", cv2.WINDOW_NORMAL)
     cv2.namedWindow("detections", cv2.WINDOW_NORMAL)

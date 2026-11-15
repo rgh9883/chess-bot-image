@@ -52,15 +52,19 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 
 ## Files
 
-- `main.py`: cleared (old capture code is in git history); will hold the real game loop.
-- `detect.py`: runs the model on a frame and draws boxes + confidence. `USE_CAMERA` flag switches between live camera and `TEST_IMAGE`.
-- `prelabel.py` (written by Claude at my request, for speed): space saves a photo to `data/b2_img_NNN.png` and the model's boxes to a matching `.txt`, plus `data/data.yaml`, for upload to Roboflow and correcting classes there.
-- `calibrate.py`: grabs one live frame from the camera, I click the 4 inner grid corners (top-left, top-right, bottom-right, bottom-left), computes `M = cv2.getPerspectiveTransform(src, dst)`, warps to 800x800, draws a grid, saves `images/warped.png` and `corners.npy`. Earlier review notes are fixed (dots drawn on `display = img.copy()`, quitting before 4 clicks exits cleanly).
-- `corners.npy`: calibration corners for the pink/green board (Oct 11), verified with `images/warped.png`; grid lines match square boundaries.
-- `data/`: raw training photos (currently missing from the project folder; the 42 photos exist only inside `dataset/`).
-- `train.py`: trains `yolo26n.pt` on `dataset/data.yaml`. Real run was on the PC (GPU), 100 epochs, imgsz 1280.
-- `models/best.pt`: trained v1 model, copied from the PC run and committed. `runs/` and `yolo26n.pt` are gitignored.
-- `dataset/`: Roboflow export, 34 train / 8 valid images, no test split. Classes in `data.yaml`: `names: ['dark_piece', 'white_piece']`, so **class 0 = dark (brown), class 1 = white**. `data.yaml` is unedited; its `../train/images` paths work because Ultralytics strips a leading `../` when the path doesn't exist (verified in training).
+Run everything from the project root. Tools are run as modules so they can import `vision.py`: `uv run python -m tools.detect` (not `uv run tools/detect.py`).
+
+- `main.py`: empty; will hold the real game loop.
+- `vision.py`: shared settings and code. `MODEL` (`models/v3.pt`), `CORNERS`, stable by-id `CAMERA` path, `IMGSZ`, `CONF`, `BASE_OFFSET`. `open_camera()`, `load_homography()`, `draw_board_outline()`, `detect(model, M, img)` returns `{square: chess.WHITE/BLACK}` plus an annotated copy (step 4: base point, `perspectiveTransform`, off-board skip, highest confidence wins when two boxes share a square). Written by Claude at my request; not yet tested on the camera.
+- `tools/calibrate.py`: click the 4 inner grid corners (TL, TR, BR, BL), saves `corners.npy`, then shows the warped grid in a window (no file saved).
+- `tools/detect.py`: my detection test script. `USE_CAMERA` flag switches between live camera and `TEST_IMAGE`.
+- `tools/prelabel.py`: space saves `data/<PREFIX>NNN.png` + the model's labels `.txt` + `data/data.yaml` for Roboflow upload. Change `PREFIX` for each new batch (last used `b2_img_`).
+- `tools/train.py`: trains `yolo26n.pt` on `dataset/data.yaml` (100 epochs, imgsz 1280, `hsv_s=0.2`, GPU). Run on the PC.
+- `corners.npy`: calibration. **Stale**: the board moved during batch 2; recalibrate before testing step 4.
+- `models/`: `v1.pt`, `v2.pt` (`hsv_s=0.2`), `v3.pt` (more data, current; colors correct).
+- `dataset/`: Roboflow export v2 (71 train / 17 valid). `names: ['dark_piece', 'white_piece']`, so **class 0 = dark, class 1 = white**. Its `../train/images` paths work as-is.
+- `data/`: raw photos and prelabels, **gitignored** (already in Roboflow). Local only.
+- Gitignored local junk: `runs/`, `yolo26n.pt` (auto-downloaded pretrained weights).
 
 ## Progress so far
 
@@ -76,10 +80,10 @@ For detection, don't warp the whole image. Transform only each piece's base poin
 
 1. Done: checked `data.yaml` and a sample label (format `class x_center y_center width height`, normalized 0 to 1). Only add a `path:` key if training can't find the dataset.
 2. Done: trained nano model v1 on the PC; box bottom edges looked good on validation images.
-3. Run the trained model on new photos and on the live feed; draw boxes on a `.copy()` to inspect.
-4. Map detections to squares (base point + `perspectiveTransform`), ignore points outside the board.
+3. Done: model runs on photos/live feed; v3 classifies colors correctly after batch 2 (pre-labeled with `tools/prelabel.py`).
+4. In progress: map detections to squares. Code is in `vision.detect`; recalibrate, then test on a known position.
 5. Match occupancy to legal moves, then add Stockfish via `chess.engine.SimpleEngine.popen_uci`.
-6. Collect more games under **different lighting** (and a few with a hand in frame), pre-label them with the first model, correct in Roboflow, retrain.
+6. Done for batch 2 (v3). Repeat with a new `PREFIX` if accuracy drops in new conditions.
 
 ## Labeling rules (for future batches)
 

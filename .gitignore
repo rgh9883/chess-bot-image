@@ -12,3 +12,6 @@ wheels/
 # YOLO
 yolo26n.pt
 runs/
+
+# Raw photos (already uploaded to Roboflow)
+data/
